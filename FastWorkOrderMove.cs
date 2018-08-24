@@ -7,6 +7,7 @@ using BattleTech.UI;
 using Harmony;
 using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace FastWorkOrderMover
 {
@@ -49,8 +50,10 @@ namespace FastWorkOrderMover
             if (ctrlHeld && !shiftHeld)
             {
                 var sim = Traverse.Create(__instance).Field("Sim").GetValue<SimGameState>();
-                sim.MechLabQueue = ___allMechElements.OrderByDescending(x => x.cumulativeDaysRemaining).ThenBy(x => x.Entry.GUID).Select(x => x.Entry).ToList();
-                __instance.SetData(sim, __instance.closeCallback);
+                var sortedWorkOrders = ___allMechElements.OrderByDescending(x => x.cumulativeDaysRemaining).ThenBy(x => x.Entry.GUID).Select(x => x.Entry).ToList();
+                var closeCb = Traverse.Create(__instance).Field("closeCallback").GetValue<UnityAction>();
+                Traverse.Create(sim).Property("MechLabQueue").SetValue(sortedWorkOrders);
+                __instance.SetData(sim, closeCb);
 
                 return false;
             }
@@ -91,8 +94,10 @@ namespace FastWorkOrderMover
             if (ctrlHeld && !shiftHeld)
             {
                 var sim = Traverse.Create(__instance).Field("Sim").GetValue<SimGameState>();
-                sim.MechLabQueue = ___allMechElements.OrderBy(x => x.cumulativeDaysRemaining).ThenBy(x => x.Entry.GUID).Select(x => x.Entry).ToList();
-                __instance.SetData(sim, __instance.closeCallback);
+                var sortedWorkOrders = ___allMechElements.OrderBy(x => x.cumulativeDaysRemaining).ThenBy(x => x.Entry.GUID).Select(x => x.Entry).ToList();
+                var closeCb = Traverse.Create(__instance).Field("closeCallback").GetValue<UnityAction>();
+                Traverse.Create(sim).Property("MechLabQueue").SetValue(sortedWorkOrders);
+                __instance.SetData(sim, closeCb);
 
                 return false;
             }
