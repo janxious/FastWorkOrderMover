@@ -66,11 +66,7 @@ namespace FastWorkOrderMover
             if (shiftHeld)
             {
                 var initialIndex = ___allMechElements.IndexOf(element);
-                if (initialIndex >= ___allMechElements.Count)
-                {
-                    return false;
-                }
-
+                if (initialIndex >= ___allMechElements.Count) return false;
                 var newIndex = ___allMechElements.Count - 1;
                 ___allMechElements.Remove(element);
                 ___allMechElements.Insert(newIndex, element);
