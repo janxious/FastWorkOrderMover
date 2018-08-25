@@ -61,19 +61,25 @@ namespace FastWorkOrderMover
                         .ToList();
                 AccessTools.FieldRefAccess<SimGameState, List<WorkOrderEntry>>(___Sim, "MechLabQueue") = sortedWorkOrders;
                 __instance.SetData(___Sim, ___closeCallback);
-                return false;
             }
 
-            // shift was held
-            var initialIndex = ___allMechElements.IndexOf(element);
-            if (initialIndex >= ___allMechElements.Count) { return false; }
-            var newIndex = ___allMechElements.Count - 1;
-            ___allMechElements.Remove(element);
-            ___allMechElements.Insert(newIndex, element);
-            ___mechLabQueue.Remove(element.Entry);
-            ___mechLabQueue.Insert(newIndex, element.Entry);
-            element.transform.SetSiblingIndex(newIndex);
-            ___modified = true;
+            if (shiftHeld)
+            {
+                var initialIndex = ___allMechElements.IndexOf(element);
+                if (initialIndex >= ___allMechElements.Count)
+                {
+                    return false;
+                }
+
+                var newIndex = ___allMechElements.Count - 1;
+                ___allMechElements.Remove(element);
+                ___allMechElements.Insert(newIndex, element);
+                ___mechLabQueue.Remove(element.Entry);
+                ___mechLabQueue.Insert(newIndex, element.Entry);
+                element.transform.SetSiblingIndex(newIndex);
+                ___modified = true;
+            }
+
             return false;
         }
     }
