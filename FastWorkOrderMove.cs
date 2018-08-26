@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using BattleTech;
 using BattleTech.UI;
 using Harmony;
 using Newtonsoft.Json;
-using UnityEngine;
-using UnityEngine.Events;
 
 namespace FastWorkOrderMover
 {
@@ -37,45 +32,16 @@ namespace FastWorkOrderMover
     [HarmonyPatch(typeof(TaskManagementWidget), "OnSortDown")]
     public static class TaskManagementWidget_OnSortDown_Patch
     {
-        public static bool Prefix(
-            TaskManagementElement element,
-            TaskManagementWidget __instance,
-            ref List<TaskManagementElement> ___allMechElements,
-            ref List<WorkOrderEntry> ___mechLabQueue,
-            ref bool ___modified,
-            ref UnityAction ___closeCallback,
-            ref SimGameState ___Sim)
+        public static bool Prefix(TaskManagementElement element, TaskManagementWidget __instance, ref bool ___modified)
         {
-            var shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            var ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-            if (ctrlHeld && shiftHeld) return true;
-            if (!ctrlHeld && !shiftHeld) return true;
-
-            if (ctrlHeld)
-            {
-                var sortedWorkOrders =
-                    ___allMechElements
-                        .OrderByDescending(el => el.cumulativeDaysRemaining)
-                        .ThenBy(el => el.Entry.GUID)
-                        .Select(el => el.Entry)
-                        .ToList();
-                AccessTools.FieldRefAccess<SimGameState, List<WorkOrderEntry>>(___Sim, "MechLabQueue") = sortedWorkOrders;
-                __instance.SetData(___Sim, ___closeCallback);
-            }
-
-            if (shiftHeld)
-            {
-                var initialIndex = ___allMechElements.IndexOf(element);
-                if (initialIndex >= ___allMechElements.Count) return false;
-                var newIndex = ___allMechElements.Count - 1;
-                ___allMechElements.Remove(element);
-                ___allMechElements.Insert(newIndex, element);
-                ___mechLabQueue.Remove(element.Entry);
-                ___mechLabQueue.Insert(newIndex, element.Entry);
-                element.transform.SetSiblingIndex(newIndex);
-                ___modified = true;
-            }
-
+            var state = State.GetState();
+            if (state.IsNothing)
+                return true;
+            else if (state.IsSorting)
+                Sorter.SortWorkOrdersDescending(taskManagementWidget: __instance);
+            else if (state.IsMoving)
+                Mover.MoveWorkOrderToBottom(taskManagementWidget: __instance, workOrder: element);
+            ___modified = true;
             return false;
         }
     }
@@ -83,44 +49,17 @@ namespace FastWorkOrderMover
     [HarmonyPatch(typeof(TaskManagementWidget), "OnSortUp")]
     public static class TaskManagementWidget_OnSortUp_Patch
     {
-        public static bool Prefix(
-            TaskManagementWidget __instance,
-            TaskManagementElement element,
-            ref List<TaskManagementElement> ___allMechElements,
-            ref List<WorkOrderEntry> ___mechLabQueue,
-            ref bool ___modified)
+        public static bool Prefix(TaskManagementWidget __instance, TaskManagementElement element, ref bool ___modified)
         {
-            var shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            var ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-
-            if (ctrlHeld && !shiftHeld)
-            {
-                var sim = Traverse.Create(__instance).Field("Sim").GetValue<SimGameState>();
-                var sortedWorkOrders = ___allMechElements.OrderBy(x => x.cumulativeDaysRemaining).ThenBy(x => x.Entry.GUID).Select(x => x.Entry).ToList();
-                var closeCb = Traverse.Create(__instance).Field("closeCallback").GetValue<UnityAction>();
-                Traverse.Create(sim).Property("MechLabQueue").SetValue(sortedWorkOrders);
-                __instance.SetData(sim, closeCb);
-
-                return false;
-            }
-
-            if (!ctrlHeld && shiftHeld)
-            {
-                var initialIndex = ___allMechElements.IndexOf(element);
-                if (initialIndex == 0) return false;
-                var newIndex = 0;
-                ___allMechElements.Remove(element);
-                ___allMechElements.Insert(newIndex, element);
-                ___mechLabQueue.Remove(element.Entry);
-                ___mechLabQueue.Insert(newIndex, element.Entry);
-                element.transform.SetSiblingIndex(newIndex);
-                ___modified = true;
-
-                return false;
-            }
-
-            // let original method run if no keypress modifiers were used
-            return true;
+            var state = State.GetState();
+            if (state.IsNothing)
+                return true;
+            else if (state.IsSorting)
+                Sorter.SortWorkOrdersAscending(taskManagementWidget: __instance);
+            else if (state.IsMoving)
+                Mover.MoveWorkOrderToTop(taskManagementWidget: __instance, workOrder: element);
+            ___modified = true;
+            return false;
         }
     }
 }
