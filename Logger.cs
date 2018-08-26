@@ -1,12 +1,11 @@
 ﻿using System;
 using System.IO;
-using static FastWorkOrderMover.AssemblyPatch;
 
 namespace FastWorkOrderMover
 {
     public class Logger
     {
-        private static string LogFilePath => $"{ModDirectory}/{Settings.ModName}.log";
+        private static string LogFilePath => $"{Core.ModDirectory}/{Core.ModName}.log";
 
         public static void Error(Exception ex)
         {
@@ -20,7 +19,7 @@ namespace FastWorkOrderMover
 
         public static void Debug(String line)
         {
-            if (!ModSettings.debug) return;
+            if (!Core.ModSettings.debug) return;
             using (var writer = new StreamWriter(LogFilePath, true))
             {
                 writer.WriteLine(line);
